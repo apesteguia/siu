@@ -1,5 +1,13 @@
 pub mod files;
+pub mod pos;
 pub mod state;
 pub mod ui;
 
-fn main() {}
+use state::*;
+
+fn main() {
+    let s = State::new("/home/mikel/Escritorio/")
+        .unwrap()
+        .update()
+        .exit();
+}
