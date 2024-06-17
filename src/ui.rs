@@ -48,4 +48,10 @@ impl SiuWin {
         box_(self.win, 0, 0);
         wrefresh(self.win);
     }
+
+    pub fn change_dim(&mut self, coord: Pos<i32>, dim: Pos<i32>) {
+        self.dim = dim;
+        self.coord = coord;
+        self.win = newwin(dim.y, dim.x, coord.y, coord.x);
+    }
 }

@@ -5,12 +5,13 @@ use std::{env::current_dir, path::Path};
 const W_RIGHT: f32 = 0.2;
 const W_MIDDLE: f32 = 0.4;
 const W_LEFT: f32 = 0.4;
-const START_TOP: i32 = 0;
+const START_TOP: i32 = 1;
 
 pub struct State {
     pub right_pane: SiuWin,
     pub middle_pane: SiuWin,
     pub left_pane: SiuWin,
+    pub dim: Pos<i32>,
 }
 
 impl State {
@@ -35,26 +36,33 @@ impl State {
         let w_left = (w as f32 * W_LEFT) as i32;
 
         //coord dim
-        let right_pane = SiuWin::new(Pos::new(1, START_TOP), Pos::new(w_right, h), &path)?;
+        let right_pane = SiuWin::new(
+            Pos::new(1, START_TOP),
+            Pos::new(w_right, h - START_TOP),
+            &path,
+        )?;
         let middle_pane = SiuWin::new(
             Pos::new(1 + w_right, START_TOP),
-            Pos::new(w_middle, h),
+            Pos::new(w_middle, h - START_TOP),
             &path,
         )?;
         let left_pane = SiuWin::new(
             Pos::new(1 + w_right + w_middle, START_TOP),
-            Pos::new(w_left, h),
+            Pos::new(w_left, h - START_TOP),
             &path,
         )?;
 
         Ok(Self {
+            dim: Pos::new(w, h),
             right_pane,
             middle_pane,
             left_pane,
         })
     }
 
-    pub fn display(&self) {
+    pub fn display(&mut self) {
+        self.resize();
+        mvwprintw(stdscr(), 0, 1, &self.right_pane.path.to_string_lossy());
         self.left_pane.display();
         self.middle_pane.display();
         self.right_pane.display();
@@ -68,6 +76,30 @@ impl State {
             ch = getch();
         }
         self
+    }
+
+    pub fn resize(&mut self) {
+        let w = getmaxx(stdscr());
+        let h = getmaxy(stdscr());
+
+        if w != self.dim.x || h != self.dim.y {
+            let w_right = (w as f32 * W_RIGHT) as i32;
+            let w_middle = (w as f32 * W_MIDDLE) as i32;
+            let w_left = (w as f32 * W_LEFT) as i32;
+
+            self.right_pane
+                .change_dim(Pos::new(1, START_TOP), Pos::new(w_right, h - START_TOP));
+            self.middle_pane.change_dim(
+                Pos::new(1 + w_right, START_TOP),
+                Pos::new(w_middle, h - START_TOP),
+            );
+            self.left_pane.change_dim(
+                Pos::new(1 + w_right + w_middle, START_TOP),
+                Pos::new(w_left, h - START_TOP),
+            );
+            clear();
+            refresh();
+        }
     }
 
     pub fn exit(&mut self) {
