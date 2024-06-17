@@ -41,11 +41,19 @@ impl SiuWin {
         })
     }
 
+    pub fn update_dir<P: AsRef<Path>>(&mut self, p: P) -> std::io::Result<()> {
+        let path = p.as_ref().to_owned();
+
+        self.dir = SiuDir::new(&path)?;
+
+        self.path = path;
+        Ok(())
+    }
+
     pub fn display(&self) {
         for (i, v) in self.dir.dirs.iter().enumerate() {
-            mvwprintw(self.win, i as i32 + 1, 2, &v.name);
+            mvwprintw(self.win, i as i32, 2, &v.name);
         }
-        box_(self.win, 0, 0);
         wrefresh(self.win);
     }
 

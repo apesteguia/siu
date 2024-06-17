@@ -9,5 +9,6 @@ fn main() {
     let s = State::new("/home/mikel/Escritorio/")
         .unwrap()
         .update()
+        .unwrap()
         .exit();
 }

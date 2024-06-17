@@ -1,6 +1,9 @@
 use crate::{pos::Pos, ui::*};
 use ncurses::*;
-use std::{env::current_dir, fs::read_dir, path::Path};
+use std::{
+    env::current_dir,
+    path::{Path, PathBuf},
+};
 
 const W_RIGHT: f32 = 0.2;
 const W_MIDDLE: f32 = 0.4;
@@ -52,7 +55,12 @@ impl State {
             &path,
         )?;
 
-        let child = middle_pane.dir.dirs.first().unwrap().path.clone();
+        let child: PathBuf;
+        if middle_pane.dir.dirs.is_empty() {
+            child = path.clone();
+        } else {
+            child = middle_pane.dir.dirs.first().unwrap().path.clone();
+        }
 
         let right_pane = SiuWin::new(
             Pos::new(1 + w_right + w_middle, START_TOP),
@@ -68,25 +76,66 @@ impl State {
         })
     }
 
-    pub fn display(&mut self) {
+    fn display(&mut self) {
         self.resize();
+        clear();
+        refresh();
         mvwprintw(stdscr(), 0, 1, &self.right_pane.path.to_string_lossy());
         self.left_pane.display();
         self.middle_pane.display();
         self.right_pane.display();
     }
 
-    pub fn update(&mut self) -> &mut Self {
+    pub fn update(&mut self) -> std::io::Result<&mut Self> {
         self.display();
         let mut ch = getch();
         while ch != 113 {
+            match ch {
+                //VIM movment keys
+                //h
+                104 => self.handle_movment_left(),
+                //j
+                106 => self.handle_movment_down()?,
+                //k
+                107 => self.handle_movment_up()?,
+                //l
+                108 => self.handle_movment_right(),
+                _ => {}
+            }
+
             self.display();
             ch = getch();
         }
-        self
+        Ok(self)
     }
 
-    pub fn resize(&mut self) {
+    fn handle_movment_down(&mut self) -> std::io::Result<()> {
+        if self.middle_pane.idx.x < self.middle_pane.dir.dirs.len() - 1 {
+            self.middle_pane.idx.x += 1;
+            self.right_pane.update_dir(
+                self.middle_pane.dir.dirs[self.middle_pane.idx.x]
+                    .path
+                    .clone(),
+            )?;
+        }
+        Ok(())
+    }
+    fn handle_movment_up(&mut self) -> std::io::Result<()> {
+        if self.middle_pane.idx.x > 0 {
+            self.middle_pane.idx.x -= 1;
+            self.right_pane.update_dir(
+                self.middle_pane.dir.dirs[self.middle_pane.idx.x]
+                    .path
+                    .clone(),
+            )?;
+        }
+        Ok(())
+    }
+
+    fn handle_movment_right(&mut self) {}
+    fn handle_movment_left(&mut self) {}
+
+    fn resize(&mut self) {
         let w = getmaxx(stdscr());
         let h = getmaxy(stdscr());
 
