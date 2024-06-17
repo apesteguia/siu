@@ -1,6 +1,6 @@
 use crate::{pos::Pos, ui::*};
 use ncurses::*;
-use std::{env::current_dir, path::Path};
+use std::{env::current_dir, fs::read_dir, path::Path};
 
 const W_RIGHT: f32 = 0.2;
 const W_MIDDLE: f32 = 0.4;
@@ -35,21 +35,29 @@ impl State {
         let w_middle = (w as f32 * W_MIDDLE) as i32;
         let w_left = (w as f32 * W_LEFT) as i32;
 
+        let parent = match p.as_ref().parent() {
+            Some(par) => par,
+            None => panic!(),
+        };
+
         //coord dim
-        let right_pane = SiuWin::new(
+        let left_pane = SiuWin::new(
             Pos::new(1, START_TOP),
             Pos::new(w_right, h - START_TOP),
-            &path,
+            &parent,
         )?;
         let middle_pane = SiuWin::new(
             Pos::new(1 + w_right, START_TOP),
             Pos::new(w_middle, h - START_TOP),
             &path,
         )?;
-        let left_pane = SiuWin::new(
+
+        let child = middle_pane.dir.dirs.first().unwrap().path.clone();
+
+        let right_pane = SiuWin::new(
             Pos::new(1 + w_right + w_middle, START_TOP),
             Pos::new(w_left, h - START_TOP),
-            &path,
+            &child,
         )?;
 
         Ok(Self {
