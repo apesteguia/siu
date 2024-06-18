@@ -90,6 +90,35 @@ impl SiuWin {
         wrefresh(self.win);
     }
 
+    /*
+    fn display_bar_info(&self) {
+        let meta = self.middle_pane.dir.dirs[self.middle_pane.idx.x]
+            .meta
+            .clone()
+            .unwrap();
+        let isfile = self.middle_pane.dir.dirs[self.middle_pane.idx.x].is_file;
+        let f = format!(
+            "{} {} B {}",
+            format_permissions(meta.permissions(), isfile),
+            meta.size(),
+            format_modified(meta.modified())
+        );
+        wattron(self.middle_pane.win, COLOR_PAIR(1));
+        mvprintw(getmaxy(stdscr()) - 2, 1, &f);
+        wattroff(self.middle_pane.win, COLOR_PAIR(1) | A_BOLD());
+    } */
+    pub fn display_info(&self) {
+        let meta = self.dir.dirs[self.idx.x].meta.clone().unwrap();
+        let isfile = self.dir.dirs[self.idx.x].is_file;
+        let f = format!(
+            "{} {} B {}",
+            format_permissions(meta.permissions(), isfile),
+            meta.size(),
+            format_modified(meta.modified())
+        );
+        //mvprintw(self.dim.y + 2, 1, &f);
+    }
+
     pub fn display_right(&self, is_file: bool) {
         match is_file {
             true => {
