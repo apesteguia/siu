@@ -1,5 +1,6 @@
 use std::{
-    fs::{self, read_dir, read_to_string},
+    fs::{self, read_dir},
+    io::Read,
     path::{Path, PathBuf},
 };
 
@@ -47,7 +48,7 @@ impl SiuDir {
             let meta = entry.metadata()?;
             if meta.is_file() {
                 file.push(SiuFileInfo::new(entry.path(), meta));
-            } else {
+            } else if meta.is_dir() {
                 dirs.push(SiuFileInfo::new(entry.path(), meta));
             }
         }
@@ -56,13 +57,31 @@ impl SiuDir {
         dirs.sort_by_key(|f| f.name.to_lowercase());
         dirs.append(&mut file);
 
-        Ok(Self { path: p, dirs, content: None })
+        Ok(Self {
+            path: p,
+            dirs,
+            content: None,
+        })
     }
 
     pub fn read_dir<P: AsRef<Path>>(&mut self, p: P) -> std::io::Result<()> {
         let path = p.as_ref().to_owned();
-        let content = fs::read_to_string(&path)?;
-        self.content = Some(content);
+        let mut file = std::fs::File::open(&path)?;
+
+        // Crear un buffer con tamaño máximo especificado
+        let mut buffer = vec![0; 2000];
+
+        // Leer el archivo en el buffer
+        let bytes_read = file.read(&mut buffer)?;
+
+        // Truncar el buffer para reflejar los bytes realmente leídos
+        buffer.truncate(bytes_read);
+
+        // Convertir los bytes leídos a una cadena de texto
+        let content_string = String::from_utf8_lossy(&buffer).to_string();
+
+        // Actualizar el contenido del struct
+        self.content = Some(content_string);
         self.dirs.clear();
         self.path = path;
         Ok(())

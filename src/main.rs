@@ -6,9 +6,5 @@ pub mod ui;
 use state::*;
 
 fn main() {
-    let s = State::new("/home/alumno/Escritorio/siu/")
-        .unwrap()
-        .update()
-        .unwrap()
-        .exit();
+    let _ = State::new("/home/mikel/").unwrap().update().unwrap().exit();
 }

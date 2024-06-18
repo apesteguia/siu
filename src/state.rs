@@ -30,6 +30,12 @@ impl State {
         raw();
         cbreak();
         refresh();
+        start_color();
+        init_pair(1, COLOR_WHITE, COLOR_BLACK);
+        init_pair(2, COLOR_WHITE, COLOR_BLUE);
+        init_pair(3, COLOR_BLUE, COLOR_BLACK);
+        init_pair(4, COLOR_BLACK, COLOR_WHITE);
+        init_pair(5, COLOR_RED, COLOR_WHITE);
 
         let w = getmaxx(stdscr());
         let h = getmaxy(stdscr());
@@ -59,7 +65,13 @@ impl State {
         if middle_pane.dir.dirs.is_empty() {
             child = path.clone();
         } else {
-            child = middle_pane.dir.dirs.first().unwrap().path.clone();
+            child = middle_pane
+                .dir
+                .dirs
+                .first()
+                .expect("SALIENDO EN STATE CHILD")
+                .path
+                .clone();
         }
 
         let right_pane = SiuWin::new(
@@ -83,7 +95,8 @@ impl State {
         mvwprintw(stdscr(), 0, 1, &self.right_pane.path.to_string_lossy());
         self.left_pane.display();
         self.middle_pane.display();
-        self.right_pane.display_right(self.middle_pane.dir.dirs[self.middle_pane.idx.x].is_file);
+        self.right_pane
+            .display_right(self.middle_pane.dir.dirs[self.middle_pane.idx.x].is_file);
     }
 
     pub fn update(&mut self) -> std::io::Result<&mut Self> {
@@ -113,8 +126,14 @@ impl State {
         if self.middle_pane.idx.x < self.middle_pane.dir.dirs.len() - 1 {
             self.middle_pane.idx.x += 1;
             if self.middle_pane.dir.dirs[self.middle_pane.idx.x].is_file {
-                self.right_pane.dir.read_dir(self.middle_pane.dir.dirs[self.middle_pane.idx.x].path.clone())?;
-                self.right_pane.path = self.middle_pane.dir.dirs[self.middle_pane.idx.x].path.clone();
+                self.right_pane.dir.read_dir(
+                    self.middle_pane.dir.dirs[self.middle_pane.idx.x]
+                        .path
+                        .clone(),
+                )?;
+                self.right_pane.path = self.middle_pane.dir.dirs[self.middle_pane.idx.x]
+                    .path
+                    .clone();
             } else {
                 self.right_pane.update_dir(
                     self.middle_pane.dir.dirs[self.middle_pane.idx.x]
@@ -125,11 +144,16 @@ impl State {
         }
         Ok(())
     }
+
     fn handle_movment_up(&mut self) -> std::io::Result<()> {
         if self.middle_pane.idx.x > 0 {
             self.middle_pane.idx.x -= 1;
             if self.middle_pane.dir.dirs[self.middle_pane.idx.x].is_file {
-                self.right_pane.dir.read_dir(self.middle_pane.dir.dirs[self.middle_pane.idx.x].path.clone())?;
+                self.right_pane.dir.read_dir(
+                    self.middle_pane.dir.dirs[self.middle_pane.idx.x]
+                        .path
+                        .clone(),
+                )?;
             } else {
                 self.right_pane.update_dir(
                     self.middle_pane.dir.dirs[self.middle_pane.idx.x]
@@ -142,16 +166,26 @@ impl State {
     }
 
     fn handle_movment_right(&mut self) -> std::io::Result<()> {
-        if !self.middle_pane.dir.dirs[self.middle_pane.idx.x].is_file {
+        if !self.middle_pane.dir.dirs[self.middle_pane.idx.x].is_file
+            && !self.right_pane.dir.dirs.is_empty()
+        {
+            self.middle_pane.idx.x = 0;
+            self.left_pane.idx.x = 0;
+            self.right_pane.idx.x = 0;
+
             let path = self.right_pane.dir.dirs[0].path.clone();
+            let isfile = self.right_pane.dir.dirs[0].is_file;
             std::mem::swap(&mut self.middle_pane.dir, &mut self.right_pane.dir);
             std::mem::swap(&mut self.middle_pane.path, &mut self.right_pane.path);
 
             std::mem::swap(&mut self.right_pane.dir, &mut self.left_pane.dir);
             std::mem::swap(&mut self.right_pane.path, &mut self.left_pane.path);
 
-            self.right_pane.update_dir(&path)?;
-
+            if isfile {
+                self.right_pane.dir.read_dir(&path)?;
+            } else {
+                self.right_pane.update_dir(&path)?
+            }
         }
 
         Ok(())
@@ -161,7 +195,11 @@ impl State {
         let parent_path = self.left_pane.path.parent().map(|p| p.to_path_buf());
         let middle_parent = self.middle_pane.path.parent().map(|p| p.to_path_buf());
 
-        if let Some(parent) = middle_parent {
+        self.middle_pane.idx.x = 0;
+        self.left_pane.idx.x = 0;
+        self.right_pane.idx.x = 0;
+
+        if let Some(_) = middle_parent {
             std::mem::swap(&mut self.middle_pane.dir, &mut self.left_pane.dir);
             std::mem::swap(&mut self.middle_pane.path, &mut self.left_pane.path);
 
@@ -177,8 +215,6 @@ impl State {
 
         Ok(())
     }
-
-
 
     fn resize(&mut self) {
         let w = getmaxx(stdscr());

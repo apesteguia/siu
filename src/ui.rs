@@ -52,8 +52,28 @@ impl SiuWin {
 
     pub fn display(&self) {
         for (i, v) in self.dir.dirs.iter().enumerate() {
-//             let s = format!("{} {}", v.name, f.is_file);
-            mvwprintw(self.win, i as i32, 2, &v.name);
+            //             let s = format!("{} {}", v.name, f.is_file);
+            if i == self.idx.x {
+                if v.is_file {
+                    wattron(self.win, COLOR_PAIR(4));
+                    mvwprintw(self.win, i as i32, 2, &v.name);
+                    wattroff(self.win, COLOR_PAIR(4));
+                } else {
+                    wattron(self.win, COLOR_PAIR(2));
+                    mvwprintw(self.win, i as i32, 2, &v.name);
+                    wattroff(self.win, COLOR_PAIR(2));
+                }
+            } else {
+                if v.is_file {
+                    wattron(self.win, COLOR_PAIR(1));
+                    mvwprintw(self.win, i as i32, 2, &v.name);
+                    wattroff(self.win, COLOR_PAIR(1));
+                } else {
+                    wattron(self.win, COLOR_PAIR(3));
+                    mvwprintw(self.win, i as i32, 2, &v.name);
+                    wattron(self.win, COLOR_PAIR(3));
+                }
+            }
         }
         wrefresh(self.win);
     }
@@ -61,12 +81,46 @@ impl SiuWin {
     pub fn display_right(&self, is_file: bool) {
         match is_file {
             true => {
-                mvwprintw(self.win, 0, 0, &self.dir.content.clone().unwrap());
+                let sanitized: String = self
+                    .dir
+                    .content
+                    .clone()
+                    .unwrap()
+                    .chars()
+                    .filter(|&c| c != '\0')
+                    .collect();
+                mvwprintw(self.win, 0, 0, &sanitized);
             }
             false => {
-                for (i, v) in self.dir.dirs.iter().enumerate() {
-    //             let s = format!("{} {}", v.name, f.is_file);
-                    mvwprintw(self.win, i as i32, 2, &v.name);
+                if !self.dir.dirs.is_empty() {
+                    for (i, v) in self.dir.dirs.iter().enumerate() {
+                        //             let s = format!("{} {}", v.name, f.is_file);
+                        if i == self.idx.x {
+                            if v.is_file {
+                                wattron(self.win, COLOR_PAIR(4));
+                                mvwprintw(self.win, i as i32, 2, &v.name);
+                                wattroff(self.win, COLOR_PAIR(4));
+                            } else {
+                                wattron(self.win, COLOR_PAIR(2));
+                                mvwprintw(self.win, i as i32, 2, &v.name);
+                                wattroff(self.win, COLOR_PAIR(2));
+                            }
+                        } else {
+                            if v.is_file {
+                                wattron(self.win, COLOR_PAIR(1));
+                                mvwprintw(self.win, i as i32, 2, &v.name);
+                                wattroff(self.win, COLOR_PAIR(1));
+                            } else {
+                                wattron(self.win, COLOR_PAIR(3));
+                                mvwprintw(self.win, i as i32, 2, &v.name);
+                                wattron(self.win, COLOR_PAIR(3));
+                            }
+                        }
+                    }
+                } else {
+                    wattron(self.win, COLOR_PAIR(5));
+                    mvwprintw(self.win, 0, 0, "Dir empty");
+                    wattroff(self.win, COLOR_PAIR(5));
                 }
             }
         }
