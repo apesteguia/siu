@@ -38,7 +38,7 @@ impl State {
         let w_middle = (w as f32 * W_MIDDLE) as i32;
         let w_left = (w as f32 * W_LEFT) as i32;
 
-        let parent = match p.as_ref().parent() {
+        let parent = match path.parent() {
             Some(par) => par,
             None => panic!(),
         };
@@ -83,7 +83,7 @@ impl State {
         mvwprintw(stdscr(), 0, 1, &self.right_pane.path.to_string_lossy());
         self.left_pane.display();
         self.middle_pane.display();
-        self.right_pane.display();
+        self.right_pane.display_right(self.middle_pane.dir.dirs[self.middle_pane.idx.x].is_file);
     }
 
     pub fn update(&mut self) -> std::io::Result<&mut Self> {
@@ -112,22 +112,31 @@ impl State {
     fn handle_movment_down(&mut self) -> std::io::Result<()> {
         if self.middle_pane.idx.x < self.middle_pane.dir.dirs.len() - 1 {
             self.middle_pane.idx.x += 1;
-            self.right_pane.update_dir(
-                self.middle_pane.dir.dirs[self.middle_pane.idx.x]
-                    .path
-                    .clone(),
-            )?;
+            if self.middle_pane.dir.dirs[self.middle_pane.idx.x].is_file {
+                self.right_pane.dir.read_dir(self.middle_pane.dir.dirs[self.middle_pane.idx.x].path.clone())?;
+                self.right_pane.path = self.middle_pane.dir.dirs[self.middle_pane.idx.x].path.clone();
+            } else {
+                self.right_pane.update_dir(
+                    self.middle_pane.dir.dirs[self.middle_pane.idx.x]
+                        .path
+                        .clone(),
+                )?;
+            }
         }
         Ok(())
     }
     fn handle_movment_up(&mut self) -> std::io::Result<()> {
         if self.middle_pane.idx.x > 0 {
             self.middle_pane.idx.x -= 1;
-            self.right_pane.update_dir(
-                self.middle_pane.dir.dirs[self.middle_pane.idx.x]
-                    .path
-                    .clone(),
-            )?;
+            if self.middle_pane.dir.dirs[self.middle_pane.idx.x].is_file {
+                self.right_pane.dir.read_dir(self.middle_pane.dir.dirs[self.middle_pane.idx.x].path.clone())?;
+            } else {
+                self.right_pane.update_dir(
+                    self.middle_pane.dir.dirs[self.middle_pane.idx.x]
+                        .path
+                        .clone(),
+                )?;
+            }
         }
         Ok(())
     }

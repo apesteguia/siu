@@ -52,7 +52,23 @@ impl SiuWin {
 
     pub fn display(&self) {
         for (i, v) in self.dir.dirs.iter().enumerate() {
+//             let s = format!("{} {}", v.name, f.is_file);
             mvwprintw(self.win, i as i32, 2, &v.name);
+        }
+        wrefresh(self.win);
+    }
+
+    pub fn display_right(&self, is_file: bool) {
+        match is_file {
+            true => {
+                mvwprintw(self.win, 0, 0, &self.dir.content.clone().unwrap());
+            }
+            false => {
+                for (i, v) in self.dir.dirs.iter().enumerate() {
+    //             let s = format!("{} {}", v.name, f.is_file);
+                    mvwprintw(self.win, i as i32, 2, &v.name);
+                }
+            }
         }
         wrefresh(self.win);
     }

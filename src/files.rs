@@ -1,5 +1,5 @@
 use std::{
-    fs::{self, read_dir},
+    fs::{self, read_dir, read_to_string},
     path::{Path, PathBuf},
 };
 
@@ -32,6 +32,7 @@ impl SiuFileInfo {
 pub struct SiuDir {
     pub dirs: Vec<SiuFileInfo>,
     pub path: PathBuf,
+    pub content: Option<String>,
 }
 
 impl SiuDir {
@@ -55,7 +56,16 @@ impl SiuDir {
         dirs.sort_by_key(|f| f.name.to_lowercase());
         dirs.append(&mut file);
 
-        Ok(Self { path: p, dirs })
+        Ok(Self { path: p, dirs, content: None })
+    }
+
+    pub fn read_dir<P: AsRef<Path>>(&mut self, p: P) -> std::io::Result<()> {
+        let path = p.as_ref().to_owned();
+        let content = fs::read_to_string(&path)?;
+        self.content = Some(content);
+        self.dirs.clear();
+        self.path = path;
+        Ok(())
     }
 
     pub fn print(&self) {
