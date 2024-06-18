@@ -1,7 +1,8 @@
-use crate::{pos::Pos, ui::*};
+use crate::{files::*, pos::Pos, ui::*};
 use ncurses::*;
 use std::{
     env::current_dir,
+    os::unix::fs::MetadataExt,
     path::{Path, PathBuf},
 };
 
@@ -38,7 +39,8 @@ impl State {
         init_pair(5, COLOR_RED, COLOR_WHITE);
 
         let w = getmaxx(stdscr());
-        let h = getmaxy(stdscr());
+        let mut h = getmaxy(stdscr());
+        h -= 3;
 
         let w_right = (w as f32 * W_RIGHT) as i32;
         let w_middle = (w as f32 * W_MIDDLE) as i32;
@@ -93,10 +95,28 @@ impl State {
         clear();
         refresh();
         mvwprintw(stdscr(), 0, 1, &self.right_pane.path.to_string_lossy());
+        self.display_bar_info();
         self.left_pane.display();
         self.middle_pane.display();
         self.right_pane
             .display_right(self.middle_pane.dir.dirs[self.middle_pane.idx.x].is_file);
+    }
+
+    fn display_bar_info(&self) {
+        let meta = self.middle_pane.dir.dirs[self.middle_pane.idx.x]
+            .meta
+            .clone()
+            .unwrap();
+        let isfile = self.middle_pane.dir.dirs[self.middle_pane.idx.x].is_file;
+        let f = format!(
+            "{} {} B {}",
+            format_permissions(meta.permissions(), isfile),
+            meta.size(),
+            format_modified(meta.modified())
+        );
+        wattron(self.middle_pane.win, COLOR_PAIR(1));
+        mvprintw(getmaxy(stdscr()) - 2, 1, &f);
+        wattroff(self.middle_pane.win, COLOR_PAIR(1) | A_BOLD());
     }
 
     pub fn update(&mut self) -> std::io::Result<&mut Self> {
@@ -221,6 +241,8 @@ impl State {
         let h = getmaxy(stdscr());
 
         if w != self.dim.x || h != self.dim.y {
+            self.dim.x = w;
+            self.dim.y = h;
             let w_right = (w as f32 * W_RIGHT) as i32;
             let w_middle = (w as f32 * W_MIDDLE) as i32;
             let w_left = (w as f32 * W_LEFT) as i32;

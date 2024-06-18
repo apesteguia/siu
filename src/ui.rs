@@ -2,6 +2,7 @@ use crate::files::*;
 use crate::pos::Pos;
 use ncurses::*;
 use std::{
+    os::unix::fs::MetadataExt,
     path::{Path, PathBuf},
     usize,
 };
@@ -51,26 +52,37 @@ impl SiuWin {
     }
 
     pub fn display(&self) {
+        wclear(self.win);
         for (i, v) in self.dir.dirs.iter().enumerate() {
             //             let s = format!("{} {}", v.name, f.is_file);
             if i == self.idx.x {
                 if v.is_file {
+                    let f = format!("{} B", v.meta.clone().unwrap().size());
                     wattron(self.win, COLOR_PAIR(4));
                     mvwprintw(self.win, i as i32, 2, &v.name);
+                    mvwprintw(self.win, i as i32, self.dim.x - f.len() as i32, &f);
                     wattroff(self.win, COLOR_PAIR(4));
                 } else {
+                    let f = format!("{}", v.meta.clone().unwrap().size());
                     wattron(self.win, COLOR_PAIR(2));
                     mvwprintw(self.win, i as i32, 2, &v.name);
+                    mvwprintw(self.win, i as i32, self.dim.x - f.len() as i32, &f);
                     wattroff(self.win, COLOR_PAIR(2));
                 }
+            } else if (i as i32) > self.dim.y - 3 {
+                break;
             } else {
                 if v.is_file {
+                    let f = format!("{} B", v.meta.clone().unwrap().size());
                     wattron(self.win, COLOR_PAIR(1));
                     mvwprintw(self.win, i as i32, 2, &v.name);
+                    mvwprintw(self.win, i as i32, self.dim.x - f.len() as i32, &f);
                     wattroff(self.win, COLOR_PAIR(1));
                 } else {
+                    let f = format!("{}", v.meta.clone().unwrap().size());
                     wattron(self.win, COLOR_PAIR(3));
                     mvwprintw(self.win, i as i32, 2, &v.name);
+                    mvwprintw(self.win, i as i32, self.dim.x - f.len() as i32, &f);
                     wattron(self.win, COLOR_PAIR(3));
                 }
             }
@@ -89,7 +101,7 @@ impl SiuWin {
                     .chars()
                     .filter(|&c| c != '\0')
                     .collect();
-                mvwprintw(self.win, 0, 0, &sanitized);
+                mvwprintw(self.win, 0, 2, &sanitized);
             }
             false => {
                 if !self.dir.dirs.is_empty() {
@@ -105,6 +117,8 @@ impl SiuWin {
                                 mvwprintw(self.win, i as i32, 2, &v.name);
                                 wattroff(self.win, COLOR_PAIR(2));
                             }
+                        } else if (i as i32) > self.dim.y - 3 {
+                            break;
                         } else {
                             if v.is_file {
                                 wattron(self.win, COLOR_PAIR(1));
