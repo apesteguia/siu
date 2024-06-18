@@ -93,13 +93,13 @@ impl State {
             match ch {
                 //VIM movment keys
                 //h
-                104 => self.handle_movment_left(),
+                104 => self.handle_movment_left()?,
                 //j
                 106 => self.handle_movment_down()?,
                 //k
                 107 => self.handle_movment_up()?,
                 //l
-                108 => self.handle_movment_right(),
+                108 => self.handle_movment_right()?,
                 _ => {}
             }
 
@@ -141,8 +141,44 @@ impl State {
         Ok(())
     }
 
-    fn handle_movment_right(&mut self) {}
-    fn handle_movment_left(&mut self) {}
+    fn handle_movment_right(&mut self) -> std::io::Result<()> {
+        if !self.middle_pane.dir.dirs[self.middle_pane.idx.x].is_file {
+            let path = self.right_pane.dir.dirs[0].path.clone();
+            std::mem::swap(&mut self.middle_pane.dir, &mut self.right_pane.dir);
+            std::mem::swap(&mut self.middle_pane.path, &mut self.right_pane.path);
+
+            std::mem::swap(&mut self.right_pane.dir, &mut self.left_pane.dir);
+            std::mem::swap(&mut self.right_pane.path, &mut self.left_pane.path);
+
+            self.right_pane.update_dir(&path)?;
+
+        }
+
+        Ok(())
+    }
+
+    fn handle_movment_left(&mut self) -> std::io::Result<()> {
+        let parent_path = self.left_pane.path.parent().map(|p| p.to_path_buf());
+        let middle_parent = self.middle_pane.path.parent().map(|p| p.to_path_buf());
+
+        if let Some(parent) = middle_parent {
+            std::mem::swap(&mut self.middle_pane.dir, &mut self.left_pane.dir);
+            std::mem::swap(&mut self.middle_pane.path, &mut self.left_pane.path);
+
+            std::mem::swap(&mut self.right_pane.dir, &mut self.left_pane.dir);
+            std::mem::swap(&mut self.right_pane.path, &mut self.left_pane.path);
+
+            if let Some(p) = parent_path {
+                self.left_pane.update_dir(&p)?;
+            } else {
+                self.left_pane.dir.dirs.clear();
+            }
+        }
+
+        Ok(())
+    }
+
+
 
     fn resize(&mut self) {
         let w = getmaxx(stdscr());
